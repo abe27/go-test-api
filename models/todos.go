@@ -26,11 +26,6 @@ func GetTodos(c *fiber.Ctx) error {
 
 func CreateTodo(c *fiber.Ctx) error {
 	db := database.DBConn
-	id, ex := gonanoid.New()
-	if ex != nil {
-		panic(ex)
-	}
-
 	todo := new(Todo)
 	err := c.BodyParser(todo)
 	if err != nil {
@@ -38,12 +33,16 @@ func CreateTodo(c *fiber.Ctx) error {
 	}
 
 	// Generate Nanoid string
+	id, ex := gonanoid.New()
+	if ex != nil {
+		panic(ex)
+	}
 	todo.ID = id
 	err = db.Create(&todo).Error
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"status": "error", "massage": "Could not create todo", "data": err})
 	}
-	return c.JSON(&todo)
+	return c.Status(fiber.StatusCreated).JSON(&todo)
 }
 
 func GetTodoById(c *fiber.Ctx) error {
@@ -55,7 +54,7 @@ func GetTodoById(c *fiber.Ctx) error {
 		return c.Status(404).JSON(fiber.Map{"status": "error", "massage": "Could not find todo", "data": err})
 	}
 
-	return c.JSON(&todo)
+	return c.Status(fiber.StatusFound).JSON(&todo)
 }
 
 func UpdateTodo(c *fiber.Ctx) error {
@@ -83,7 +82,7 @@ func UpdateTodo(c *fiber.Ctx) error {
 	todo.Description = updatedTodo.Description
 	todo.Completed = updatedTodo.Completed
 	db.Save(&todo)
-	return c.JSON(&todo)
+	return c.Status(fiber.StatusAccepted).JSON(&todo)
 }
 
 func DeleteTodo(c *fiber.Ctx) error {
