@@ -60,8 +60,9 @@ func GetTodoById(c *fiber.Ctx) error {
 
 func UpdateTodo(c *fiber.Ctx) error {
 	type UpdateTodo struct {
-		Title     string `json:"title"`
-		Completed bool   `json:"completed"`
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		Completed   bool   `json:"completed"`
 	}
 	id := c.Params("id")
 	db := database.DBConn
@@ -79,6 +80,7 @@ func UpdateTodo(c *fiber.Ctx) error {
 	}
 
 	todo.Title = updatedTodo.Title
+	todo.Description = updatedTodo.Description
 	todo.Completed = updatedTodo.Completed
 	db.Save(&todo)
 	return c.JSON(&todo)
