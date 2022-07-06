@@ -52,6 +52,10 @@ func setUpRouter(app *fiber.App) {
 	route.Get("/", Welcome)
 	// Test Todos
 	route.Get("/todos", models.GetTodos)
+	route.Post("/todos", models.CreateTodo)
+	route.Get("/todos/:id", models.GetTodoById)
+	route.Put("/todos/:id", models.UpdateTodo)
+	route.Delete("/todos/:id", models.DeleteTodo)
 }
 
 func main() {
