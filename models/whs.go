@@ -77,3 +77,17 @@ func ShowWhsById(c *fiber.Ctx) error {
 		"data":    &whs,
 	})
 }
+
+func UpdateWhs(c *fiber.Ctx) error {
+	type UpdateWhs struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		IsActive    bool   `json:"is_active"`
+	}
+
+	id := c.Params("id")
+	db := database.DBConn
+
+	var whs Whs
+	err := db.First(&whs, id).Error
+}
