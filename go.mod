@@ -6,11 +6,15 @@ require github.com/gofiber/fiber/v2 v2.34.1
 
 require (
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
-	github.com/joho/godotenv v1.4.0 // indirect
+	github.com/gofiber/utils v0.0.10 // indirect
+	github.com/gorilla/schema v1.1.0 // indirect
+	github.com/mattn/go-colorable v0.1.7 // indirect
+	github.com/mattn/go-isatty v0.0.12 // indirect
 )
 
 require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
+	github.com/gofiber/fiber v1.14.6
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -29,6 +33,6 @@ require (
 	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gorm.io/driver/mysql v1.3.4
-	gorm.io/driver/postgres v1.3.8 // indirect
-	gorm.io/gorm v1.23.7 // indirect
+	gorm.io/driver/postgres v1.3.8
+	gorm.io/gorm v1.23.7
 )

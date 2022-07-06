@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
-	handlers "github.com/abe27/api/v2/controllers"
 	"github.com/abe27/api/v2/database"
 	"github.com/abe27/api/v2/models"
 	"github.com/gofiber/fiber/v2"
@@ -15,6 +15,14 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
+
+func Hello(c *fiber.Ctx) error {
+	return c.Status(200).JSON("Hello, World!")
+}
+
+func Welcome(c *fiber.Ctx) error {
+	return c.Status(200).JSON("Welcome to the API server")
+}
 
 func initDatabase() {
 	var err error
@@ -37,13 +45,25 @@ func initDatabase() {
 	fmt.Println("Migrated DB")
 }
 
-func setUpRouter() {
-
+func setUpRouter(app *fiber.App) {
+	// Welcome endpoint
+	app.Get("/", Hello)
+	route := app.Group("api/v2")
+	route.Get("/", Welcome)
+	// Test Todos
+	route.Get("/todos", models.GetTodos)
 }
 
 func main() {
-	app := fiber.New()
+	config := fiber.Config{
+		AppName:      "API Service",
+		ServerHeader: "Taweechai Yuenyang API Server",
+	}
+	// Initialize Fiber Framework
+	app := fiber.New(config)
+	// Initialize connect DB
 	initDatabase()
+	// Initialize set up router
 	app.Use(logger.New())
 	app.Use(requestid.New())
 	// Or extend your config for customization
@@ -52,8 +72,6 @@ func main() {
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString(handlers.Handler)
-	})
-	app.Listen(":3000")
+	setUpRouter(app)
+	log.Fatal(app.Listen(":3000"))
 }
