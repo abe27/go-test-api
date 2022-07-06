@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	handlers "github.com/abe27/api/v2/controllers"
 	"github.com/abe27/api/v2/database"
@@ -14,7 +15,7 @@ import (
 
 func initDatabase() {
 	var err error
-	dsn := "host=192.168.1.39 user=postgres password=kanomthaios dbname=godb port=5432"
+	dsn := "host=" + os.Getenv("DBHOST") + " user=" + os.Getenv("DBUSER") + " password=" + os.Getenv("DBPASSWD") + " dbname=" + os.Getenv("DBNAME") + " port=" + os.Getenv("DBPORT") + ""
 	database.DBConn, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("Failed to connect to database")
