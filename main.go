@@ -42,6 +42,8 @@ func initDatabase() {
 	}
 	fmt.Println("Database connected!")
 	database.DBConn.AutoMigrate(&models.Todo{})
+	database.DBConn.AutoMigrate(&models.Whs{})
+	database.DBConn.AutoMigrate(&models.User{})
 	fmt.Println("Migrated DB")
 }
 
@@ -56,6 +58,12 @@ func setUpRouter(app *fiber.App) {
 	route.Get("/todos/:id", models.GetTodoById)
 	route.Put("/todos/:id", models.UpdateTodo)
 	route.Delete("/todos/:id", models.DeleteTodo)
+
+	// User Interface
+	route.Post("/register", models.Register)
+	route.Post("/login", models.Register)
+	route.Delete("/logout", models.Register)
+	route.Get("/Profile", models.Register)
 }
 
 func main() {
