@@ -20,11 +20,6 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at" default:"now"`
 }
 
-type (
-	MsgLogin types.Login
-	MsgToken types.Token
-)
-
 const (
 	jwtSecret = "ADSads123"
 )
