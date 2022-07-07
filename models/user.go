@@ -37,6 +37,7 @@ func HashPassword(password string) (string, error) {
 }
 
 func CheckPasswordHash(password, hash string) bool {
+	// err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
@@ -132,12 +133,52 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 
-	password := hand_check_passwd
-	hash, _ := HashPassword(password) // ignore error for the sake of simplicity
-	match := CheckPasswordHash(password, hash)
+	match := CheckPasswordHash(hand_check_passwd, login.Password)
+	if match == false {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"status":  false,
+			"message": "กรุณาระบบรหัสผ่านให้ถูกต้องด้วย",
+			"data":    nil,
+		})
+	}
+
+	var auth Auth
+	auth.AuthType = "Bearer"
+	auth.Token = CreateToken(login.UserName)
+	auth.UserName = login.ID
+
+	// Create cookie
+	cookie := fiber.Cookie{
+		Name:     "jwt",
+		Value:    auth.Token,
+		Expires:  time.Now().Add(time.Hour * 24),
+		HTTPOnly: true,
+	}
+
+	c.Cookie(&cookie)
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status":  match,
-		"message": hash,
-		"data":    &login,
+		"message": "ยินดีต้อนรับเข้าสู่ระบบ API Service By Golang",
+		"data":    &auth,
+	})
+}
+
+func Logout(c *fiber.Ctx) error {
+	// Remove cookie
+	// -time.Hour = expires before one hour
+	cookie := fiber.Cookie{
+		Name:     "jwt",
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour),
+		HTTPOnly: true,
+	}
+
+	c.Cookie(&cookie)
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status":  true,
+		"message": "ออกจากระบบ API Service By Golang 😘 เรียบร้อยแล้ว",
+		"data":    nil,
 	})
 }

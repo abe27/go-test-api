@@ -49,7 +49,7 @@ func setUpRouter(app *fiber.App) {
 	// User Interface
 	route.Post("/register", models.Register)
 	route.Post("/login", models.Login)
-	route.Delete("/logout", models.Register)
+	route.Delete("/logout", models.Logout)
 	route.Get("/Profile", models.Register)
 }
 
