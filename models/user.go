@@ -46,6 +46,21 @@ func AuthSuccess(c *fiber.Ctx) error {
 	return nil
 }
 
+func CreateToken(name string) string {
+	/// Create Token
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["sub"] = utils.UUID()
+	claims["name"] = name
+	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+	t, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		panic(err)
+	}
+
+	return t
+}
+
 func Register(c *fiber.Ctx) error {
 	db := database.DBConn
 	user := new(User)
@@ -68,25 +83,15 @@ func Register(c *fiber.Ctx) error {
 	user.ID = id
 	password := user.Password
 	hash, _ := HashPassword(password) // ignore error for the sake of simplicity
-	match := CheckPasswordHash(password, hash)
-	if match {
-		user.Password = hash
-	}
-
-	/// Create Token
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["sub"] = utils.UUID()
-	claims["name"] = user.UserName
-	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
-	t, err := token.SignedString([]byte(jwtSecret))
-	if err != nil {
-		panic(err)
-	}
+	// match := CheckPasswordHash(password, hash)
+	// if match {
+	// 	user.Password = hash
+	// }
+	user.Password = hash
 
 	var auth Auth
 	auth.AuthType = "Bearer"
-	auth.Token = t
+	auth.Token = CreateToken(user.UserName)
 	auth.UserName = user.UserName
 
 	err = db.Create(&user).Error
@@ -102,5 +107,37 @@ func Register(c *fiber.Ctx) error {
 		"status":  true,
 		"message": "บันทึกข้อมูลเรียบร้อยแล้ว",
 		"data":    &auth,
+	})
+}
+
+func Login(c *fiber.Ctx) error {
+	db := database.DBConn
+	var login User
+	err := c.BodyParser(&login)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  false,
+			"message": "กรุณาตรวจสอบความถูกต้องของข้อมูลด้วย",
+			"data":    nil,
+		})
+	}
+
+	hand_check_passwd := login.Password
+	err = db.Where("user_name=?", login.UserName).First(&login).Error
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"status":  false,
+			"message": "ไม่พบข้อมูลผู้ใช้งาน",
+			"data":    nil,
+		})
+	}
+
+	password := hand_check_passwd
+	hash, _ := HashPassword(password) // ignore error for the sake of simplicity
+	match := CheckPasswordHash(password, hash)
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status":  match,
+		"message": hash,
+		"data":    &login,
 	})
 }

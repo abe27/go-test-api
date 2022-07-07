@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/abe27/api/v2/database"
@@ -11,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -32,29 +34,6 @@ func Welcome(c *fiber.Ctx) error {
 	})
 }
 
-func initDatabase() {
-	var err error
-	// dsn := "host=" + os.Getenv("DBHOST") + " user=" + os.Getenv("DBUSER") + " password=" + os.Getenv("DBPASSWD") + " dbname=" + os.Getenv("DBNAME") + " port=" + os.Getenv("DBPORT") + ""
-	dns := "root:@tcp(127.0.0.1:3306)/godb?charset=utf8mb4&parseTime=True&loc=Local"
-	database.DBConn, err = gorm.Open(mysql.Open(dns), &gorm.Config{
-		SkipDefaultTransaction: true,
-		NamingStrategy: schema.NamingStrategy{
-			TablePrefix:   "tbt_", // table name prefix, table for `User` would be `t_users`
-			SingularTable: false,  // use singular table name, table for `User` would be `user` with this option enabled
-			NoLowerCase:   false,  // skip the snake_casing of names
-			NameReplacer:  strings.NewReplacer("CID", "Cid"),
-		},
-	})
-	if err != nil {
-		panic("Failed to connect to database")
-	}
-	fmt.Println("Database connected!")
-	database.DBConn.AutoMigrate(&models.Todo{})
-	database.DBConn.AutoMigrate(&models.Whs{})
-	database.DBConn.AutoMigrate(&models.User{})
-	fmt.Println("Migrated DB")
-}
-
 func setUpRouter(app *fiber.App) {
 	// Welcome endpoint
 	app.Get("/", Hello)
@@ -69,9 +48,39 @@ func setUpRouter(app *fiber.App) {
 
 	// User Interface
 	route.Post("/register", models.Register)
-	route.Post("/login", models.Register)
+	route.Post("/login", models.Login)
 	route.Delete("/logout", models.Register)
 	route.Get("/Profile", models.Register)
+}
+
+// Initialize connect DB
+func init() {
+	var err error
+	err = godotenv.Load(".env")
+	if err != nil {
+		panic("Error loading .env file")
+	}
+
+	// dns := "host=" + os.Getenv("DBHOST") + " user=" + os.Getenv("DBUSER") + " password=" + os.Getenv("DBPASSWD") + " dbname=" + os.Getenv("DBNAME") + " port=" + os.Getenv("DBPORT") + ""
+	dns := os.Getenv("DBUSER") + ":@tcp(" + os.Getenv("DBHOST") + ":" + os.Getenv("DBPORT") + ")/" + os.Getenv("DBNAME") + "?charset=utf8mb4&parseTime=True&loc=Local"
+	database.DBConn, err = gorm.Open(mysql.Open(dns), &gorm.Config{
+		SkipDefaultTransaction: true,
+		NamingStrategy: schema.NamingStrategy{
+			TablePrefix:   "tbt_", // table name prefix, table for `User` would be `t_users`
+			SingularTable: false,  // use singular table name, table for `User` would be `user` with this option enabled
+			NoLowerCase:   false,  // skip the snake_casing of names
+			NameReplacer:  strings.NewReplacer("CID", "Cid"),
+		},
+	})
+
+	if err != nil {
+		panic("Failed to connect to database")
+	}
+	fmt.Println("Database connected!")
+	database.DBConn.AutoMigrate(&models.Todo{})
+	database.DBConn.AutoMigrate(&models.Whs{})
+	database.DBConn.AutoMigrate(&models.User{})
+	fmt.Println("Migrated DB")
 }
 
 func main() {
@@ -81,8 +90,6 @@ func main() {
 	}
 	// Initialize Fiber Framework
 	app := fiber.New(config)
-	// Initialize connect DB
-	initDatabase()
 	// Initialize set up router
 	app.Use(logger.New(logger.Config{
 		Format:     "${pid} ${status} - ${method} ${path}\n",
