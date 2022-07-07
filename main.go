@@ -17,11 +17,19 @@ import (
 )
 
 func Hello(c *fiber.Ctx) error {
-	return c.Status(200).JSON("Hello, World!")
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status":  true,
+		"message": "Hello, World",
+		"data":    nil,
+	})
 }
 
 func Welcome(c *fiber.Ctx) error {
-	return c.Status(200).JSON("Welcome to the API server")
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status":  true,
+		"message": "Welcome to the API server",
+		"data":    nil,
+	})
 }
 
 func initDatabase() {
@@ -76,7 +84,12 @@ func main() {
 	// Initialize connect DB
 	initDatabase()
 	// Initialize set up router
-	app.Use(logger.New())
+	app.Use(logger.New(logger.Config{
+		Format:     "${pid} ${status} - ${method} ${path}\n",
+		TimeFormat: "02-Jan-2022",
+		TimeZone:   "Asia/Bangkok",
+	}))
+	// Initialize RequestID
 	app.Use(requestid.New())
 	// Or extend your config for customization
 	app.Use(cors.New(cors.Config{
