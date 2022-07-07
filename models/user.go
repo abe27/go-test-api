@@ -6,6 +6,7 @@ import (
 	"github.com/abe27/api/v2/database"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/utils"
+	"github.com/golang-jwt/jwt/v4"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -18,6 +19,12 @@ type User struct {
 	IsVerify  bool      `json:"is_verify" default:"false"`
 	CreatedAt time.Time `json:"created_at" default:"now"`
 	UpdatedAt time.Time `json:"updated_at" default:"now"`
+}
+
+type Auth struct {
+	AuthType string `json:"auth_type"`
+	Token    string `json:"token"`
+	UserName string `json:"user_name"`
 }
 
 const (
@@ -39,38 +46,7 @@ func AuthSuccess(c *fiber.Ctx) error {
 	return nil
 }
 
-func createToken() (MsgToken, error) {
-	var msgToken MsgToken
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["sub"] = utils.UUID()
-	claims["name"] = "Khomkrid Lerdprasert"
-	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
-	t, err := token.SignedString([]byte(jwtSecret))
-	if err != nil {
-		return msgToken, err
-	}
-	msgToken.AccessToken = t
-
-	refreshToken := jwt.New(jwt.SigningMethodHS256)
-	rtClaims := refreshToken.Claims.(jwt.MapClaims)
-	rtClaims["sub"] = utils.UUID()
-	rtClaims["exp"] = time.Now().Add(time.Hour * 24 * 7).Unix()
-	rt, err := token.SignedString([]byte(jwtSecret))
-	if err != nil {
-		return msgToken, err
-	}
-	msgToken.RefreshToken = rt
-	return msgToken, nil
-}
-
 func Register(c *fiber.Ctx) error {
-	type Auth struct {
-		Token    string `json:"token"`
-		AuthType string `json:"auth_type"`
-		UserName string `json:"user_name"`
-	}
-
 	db := database.DBConn
 	user := new(User)
 	err := c.BodyParser(user)
@@ -97,15 +73,21 @@ func Register(c *fiber.Ctx) error {
 		user.Password = hash
 	}
 
+	/// Create Token
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["sub"] = utils.UUID()
+	claims["name"] = user.UserName
+	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+	t, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		panic(err)
+	}
+
 	var auth Auth
 	auth.AuthType = "Bearer"
-	auth.Token = hash
+	auth.Token = t
 	auth.UserName = user.UserName
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"status":  true,
-		"message": "บันทึกข้อมูลเรียบร้อยแล้ว",
-		"data":    &auth,
-	})
 
 	err = db.Create(&user).Error
 	if err != nil {
@@ -119,6 +101,6 @@ func Register(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"status":  true,
 		"message": "บันทึกข้อมูลเรียบร้อยแล้ว",
-		"data":    &user,
+		"data":    &auth,
 	})
 }
