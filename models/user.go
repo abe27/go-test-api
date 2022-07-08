@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/utils"
 	"github.com/golang-jwt/jwt/v4"
-	gonanoid "github.com/matoous/go-nanoid/v2"
+	gnid "github.com/matoous/go-nanoid/v2"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -28,7 +28,7 @@ type Auth struct {
 }
 
 const (
-	jwtSecret = "ADSads123"
+	jwtSecret = "b86cb8ef1c43e44a32acd56e60666ec533dbe58eaf3bbe4dde461f522568309b"
 )
 
 func HashPassword(password string) (string, error) {
@@ -64,19 +64,19 @@ func CreateToken(name string) string {
 
 func Register(c *fiber.Ctx) error {
 	db := database.DBConn
+	var r Response
 	user := new(User)
 	err := c.BodyParser(user)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"status":  false,
-			"message": "กรุณาตรวจสอบก่อนบันทึกข้อมูลด้วย",
-			"data":    err,
-		})
+		r.Status = false
+		r.Message = "กรุณาตรวจสอบก่อนบันทึกข้อมูลด้วย"
+		r.Data = err
+		return c.Status(fiber.StatusInternalServerError).JSON(r)
 	}
 
 	// Generate Nanoid
-	id, err := gonanoid.New()
+	id, err := gnid.New()
 	if err != nil {
 		panic(err)
 	}
@@ -93,49 +93,45 @@ func Register(c *fiber.Ctx) error {
 
 	err = db.Create(&user).Error
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"status":  false,
-			"message": "ไม่สามารถบันทึกข้อมูลได้\nกรุณาติดต่อผู้ดูแลระบบเพื่อทำการแก้ไขข้อผิดพลาดนี้",
-			"data":    err,
-		})
+		r.Status = false
+		r.Message = "ไม่สามารถบันทึกข้อมูลได้\nกรุณาติดต่อผู้ดูแลระบบเพื่อทำการแก้ไขข้อผิดพลาดนี้"
+		r.Data = err
+		return c.Status(fiber.StatusInternalServerError).JSON(r)
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"status":  true,
-		"message": "บันทึกข้อมูลเรียบร้อยแล้ว",
-		"data":    &auth,
-	})
+	r.Status = true
+	r.Message = "บันทึกข้อมูลเรียบร้อยแล้ว"
+	r.Data = &auth
+	return c.Status(fiber.StatusInternalServerError).JSON(r)
 }
 
 func Login(c *fiber.Ctx) error {
+	var r Response
 	db := database.DBConn
 	var login User
 	err := c.BodyParser(&login)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"status":  false,
-			"message": "กรุณาตรวจสอบความถูกต้องของข้อมูลด้วย",
-			"data":    nil,
-		})
+		r.Status = false
+		r.Message = "กรุณาตรวจสอบความถูกต้องของข้อมูลด้วย"
+		r.Data = err
+		return c.Status(fiber.StatusInternalServerError).JSON(r)
 	}
 
 	hand_check_passwd := login.Password
 	err = db.Where("user_name=?", login.UserName).First(&login).Error
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"status":  false,
-			"message": "ไม่พบข้อมูลผู้ใช้งาน",
-			"data":    nil,
-		})
+		r.Status = false
+		r.Message = "ไม่พบข้อมูลผู้ใช้งาน"
+		r.Data = err
+		return c.Status(fiber.StatusInternalServerError).JSON(r)
 	}
 
 	match := CheckPasswordHash(hand_check_passwd, login.Password)
 	if !match {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"status":  false,
-			"message": "กรุณาระบบรหัสผ่านให้ถูกต้องด้วย",
-			"data":    nil,
-		})
+		r.Status = false
+		r.Message = "กรุณาระบบรหัสผ่านให้ถูกต้องด้วย"
+		r.Data = nil
+		return c.Status(fiber.StatusInternalServerError).JSON(r)
 	}
 
 	var auth Auth
@@ -152,15 +148,14 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	c.Cookie(&cookie)
-
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"status":  match,
-		"message": "ยินดีต้อนรับเข้าสู่ระบบ API Service By Golang",
-		"data":    &auth,
-	})
+	r.Status = false
+	r.Message = "ยินดีต้อนรับเข้าสู่ระบบ API Service By Golang"
+	r.Data = &auth
+	return c.Status(fiber.StatusInternalServerError).JSON(r)
 }
 
 func Logout(c *fiber.Ctx) error {
+	var r Response
 	// Remove cookie
 	// -time.Hour = expires before one hour
 	cookie := fiber.Cookie{
@@ -171,10 +166,8 @@ func Logout(c *fiber.Ctx) error {
 	}
 
 	c.Cookie(&cookie)
-
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"status":  true,
-		"message": "ออกจากระบบ API Service By Golang 😘 เรียบร้อยแล้ว",
-		"data":    nil,
-	})
+	r.Status = false
+	r.Message = "ออกจากระบบ API Service By Golang 😘 เรียบร้อยแล้ว"
+	r.Data = nil
+	return c.Status(fiber.StatusInternalServerError).JSON(r)
 }
