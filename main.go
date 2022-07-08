@@ -50,7 +50,7 @@ func setUpRouter(app *fiber.App) {
 	route.Post("/register", models.Register)
 	route.Post("/login", models.Login)
 	route.Delete("/logout", models.Logout)
-	route.Get("/Profile", models.Register)
+	route.Get("/Profile", models.Profile)
 }
 
 // Initialize connect DB

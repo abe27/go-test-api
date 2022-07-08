@@ -5,6 +5,7 @@ import (
 
 	"github.com/abe27/api/v2/database"
 	"github.com/gofiber/fiber/v2"
+	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/gofiber/utils"
 	"github.com/golang-jwt/jwt/v4"
 	gnid "github.com/matoous/go-nanoid/v2"
@@ -15,16 +16,16 @@ type User struct {
 	ID        string    `gorm:"primarykey;size:21" json:"id"`
 	UserName  string    `gorm:"unique;not null;;size:10" json:"username"`
 	Email     string    `gorm:"default:null;size:25" json:"email"`
-	Password  string    `gorm:"not null;size:255" json:"password"`
+	Password  string    `gorm:"not null;size:255" json:"-"`
 	IsVerify  bool      `json:"is_verify" default:"false"`
 	CreatedAt time.Time `json:"created_at" default:"now"`
 	UpdatedAt time.Time `json:"updated_at" default:"now"`
 }
 
 type Auth struct {
-	AuthType string `json:"auth_type"`
-	Token    string `json:"token"`
-	UserName string `json:"user_name"`
+	AuthType string      `json:"auth_type"`
+	Token    string      `json:"token"`
+	UserName interface{} `json:"data"`
 }
 
 const (
@@ -42,9 +43,32 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
+func AuthError(c *fiber.Ctx, e error) error {
+	var r Response
+	r.Status = false
+	r.Message = "คุณไม่มีสิทธ์เข้าใช้งานส่วนนี้"
+	c.Status(fiber.StatusUnauthorized).JSON(r)
+	return nil
+}
+
 func AuthSuccess(c *fiber.Ctx) error {
 	c.Next()
 	return nil
+}
+
+func AuthorizationRequired() fiber.Handler {
+	return jwtware.New(jwtware.Config{
+		// Filter:         nil,
+		SuccessHandler: AuthSuccess,
+		ErrorHandler:   AuthError,
+		SigningKey:     []byte(jwtSecret),
+		// SigningKeys:   nil,
+		SigningMethod: "HS256",
+		// ContextKey:    nil,
+		// Claims:        nil,
+		// TokenLookup:   nil,
+		// AuthScheme:    nil,
+	})
 }
 
 func CreateToken(name string) string {
@@ -102,7 +126,7 @@ func Register(c *fiber.Ctx) error {
 	r.Status = true
 	r.Message = "บันทึกข้อมูลเรียบร้อยแล้ว"
 	r.Data = &auth
-	return c.Status(fiber.StatusInternalServerError).JSON(r)
+	return c.Status(fiber.StatusCreated).JSON(r)
 }
 
 func Login(c *fiber.Ctx) error {
@@ -137,7 +161,7 @@ func Login(c *fiber.Ctx) error {
 	var auth Auth
 	auth.AuthType = "Bearer"
 	auth.Token = CreateToken(login.UserName)
-	auth.UserName = login.ID
+	auth.UserName = login
 
 	// Create cookie
 	cookie := fiber.Cookie{
@@ -148,10 +172,10 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	c.Cookie(&cookie)
-	r.Status = false
+	r.Status = true
 	r.Message = "ยินดีต้อนรับเข้าสู่ระบบ API Service By Golang"
 	r.Data = &auth
-	return c.Status(fiber.StatusInternalServerError).JSON(r)
+	return c.Status(fiber.StatusOK).JSON(r)
 }
 
 func Logout(c *fiber.Ctx) error {
@@ -169,5 +193,15 @@ func Logout(c *fiber.Ctx) error {
 	r.Status = false
 	r.Message = "ออกจากระบบ API Service By Golang 😘 เรียบร้อยแล้ว"
 	r.Data = nil
-	return c.Status(fiber.StatusInternalServerError).JSON(r)
+	return c.Status(fiber.StatusAccepted).JSON(r)
+}
+
+func Profile(c *fiber.Ctx) error {
+	user := c.Locals("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	sub := claims["sub"].(string)
+	c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"sub": sub,
+	})
+	return nil
 }
