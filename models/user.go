@@ -84,10 +84,6 @@ func Register(c *fiber.Ctx) error {
 	user.ID = id
 	password := user.Password
 	hash, _ := HashPassword(password) // ignore error for the sake of simplicity
-	// match := CheckPasswordHash(password, hash)
-	// if match {
-	// 	user.Password = hash
-	// }
 	user.Password = hash
 
 	var auth Auth
@@ -134,7 +130,7 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	match := CheckPasswordHash(hand_check_passwd, login.Password)
-	if match == false {
+	if !match {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"status":  false,
 			"message": "กรุณาระบบรหัสผ่านให้ถูกต้องด้วย",
